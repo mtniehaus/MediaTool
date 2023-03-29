@@ -1,0 +1,36 @@
+﻿<Window x:Class="MediaToolApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MediaToolApp"
+        mc:Ignorable="d"
+        Title="Oofhours.com Media Tool" Height="700" Width="800" ResizeMode="NoResize" Loaded="Window_Loaded" Closing="Window_Closing">
+    <Grid>
+        <Label Content="Select an image" HorizontalAlignment="Left" Margin="30,42,0,0" VerticalAlignment="Top" FontFamily="Segoe UI Semibold" FontSize="16" Foreground="Blue" />
+        <Border Margin="30,71,448,711" Background="Blue" Height="2"/>
+
+        <Label Content="Operating System" HorizontalAlignment="Left" Margin="30,90,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="osList" HorizontalAlignment="Left" Margin="30,116,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="osList_SelectionChanged"/>
+        <Label Content="Architecture" HorizontalAlignment="Left" Margin="30,150,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="archList" HorizontalAlignment="Left" Margin="30,176,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="archList_SelectionChanged" />
+        <Label Content="Language" HorizontalAlignment="Left" Margin="30,210,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="langList" HorizontalAlignment="Left" Margin="30,236,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="langList_SelectionChanged"/>
+        <Label Content="Edition (SKU)" HorizontalAlignment="Left" Margin="30,270,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="editionList" HorizontalAlignment="Left" Margin="30,296,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False"/>
+
+        <Label Content="Settings" HorizontalAlignment="Left" Margin="400,42,0,0" VerticalAlignment="Top" FontFamily="Segoe UI Semibold" FontSize="16" Foreground="Blue"/>
+        <Border Margin="400,71,78,711" Background="Blue"/>
+        <Label Content="Destination Folder" HorizontalAlignment="Left" Margin="400,90,0,0" VerticalAlignment="Top" Width="322"/>
+        <TextBox x:Name="folderPath" HorizontalAlignment="Left" Margin="400,118,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="322" Height="20" IsEnabled="False" Background="#FFECECEC"/>
+        <Button x:Name="browseButton" Content="Browse..." HorizontalAlignment="Left" Margin="672,143,0,0" VerticalAlignment="Top" Click="browseButton_Click"/>
+        <CheckBox x:Name="noPrompt" Content="Do not require pressing a key to boot from ISO" HorizontalAlignment="Left" Margin="400,180,0,0" VerticalAlignment="Top" />
+        <Button x:Name="generateButton" Content="Generate" HorizontalAlignment="Left" Margin="328,352,0,0" VerticalAlignment="Top" FontSize="20" Background="Blue" Foreground="White" Width="100" Height="40" IsEnabled="False" Click="generateButton_Click"/>
+
+        <ProgressBar x:Name="progress" HorizontalAlignment="Center" Height="22" Margin="0,437,0,0" VerticalAlignment="Top" Width="738"/>
+        <ScrollViewer x:Name="scrollBox" HorizontalScrollBarVisibility="Auto" Margin="0,485,0,0">
+            <TextBlock Name="outputBox" Margin="30,0,0,0"/>
+        </ScrollViewer>
+        
+    </Grid>
+</Window>
