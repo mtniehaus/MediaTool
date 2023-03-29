@@ -10,9 +10,9 @@ using System.Windows;
 [assembly: AssemblyTitle("MediaToolApp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("MediaToolApp")]
-[assembly: AssemblyCopyright("Copyright ©  2023")]
+[assembly: AssemblyCompany("Oofhours.com")]
+[assembly: AssemblyProduct("Oofhours.com Media Tool")]
+[assembly: AssemblyCopyright("Copyright © 2023 by Michael Niehaus")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
