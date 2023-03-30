@@ -93,20 +93,24 @@ namespace MediaToolApp
             return null;
         }
 
-        public async Task<Collection<PSObject>> Generate(string product, string architecture, string language, string edition, string dest, bool noPrompt)
+        public async Task<Collection<PSObject>> Generate(string product, string architecture, string language, string edition, string dest, bool noPrompt, bool recompress)
         {
             try
             {
                 PSCommand list = new PSCommand();
-                list.AddCommand("Get-MediaToolISO");
-                list.AddParameter("Product", product);
-                list.AddParameter("Architecture", architecture);
-                list.AddParameter("Language", language);
-                list.AddParameter("Edition", edition);
-                list.AddParameter("Destination", dest);
+                list.AddCommand("Get-MediaToolISO")
+                    .AddParameter("Product", product)
+                    .AddParameter("Architecture", architecture)
+                    .AddParameter("Language", language)
+                    .AddParameter("Edition", edition)
+                    .AddParameter("Destination", dest);
                 if (noPrompt)
                 {
                     list.AddParameter("NoPrompt");
+                }
+                if (recompress)
+                {
+                    list.AddParameter("Recompress");
                 }
                 list.AddParameter("Verbose");
 

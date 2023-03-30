@@ -25,6 +25,8 @@
         <TextBox x:Name="folderPath" HorizontalAlignment="Left" Margin="400,118,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="322" Height="20" IsEnabled="False" Background="#FFECECEC"/>
         <Button x:Name="browseButton" Content="Browse..." HorizontalAlignment="Left" Margin="672,143,0,0" VerticalAlignment="Top" Click="browseButton_Click"/>
         <CheckBox x:Name="noPrompt" Content="Do not require pressing a key to boot from ISO" HorizontalAlignment="Left" Margin="400,180,0,0" VerticalAlignment="Top" />
+        <CheckBox x:Name="recompress" Content="Re-compress the OS image using standard compression" HorizontalAlignment="Left" Margin="400,200,0,0" VerticalAlignment="Top" />
+
         <Button x:Name="generateButton" Content="Generate" HorizontalAlignment="Left" Margin="328,352,0,0" VerticalAlignment="Top" FontSize="20" Background="Blue" Foreground="White" Width="100" Height="40" IsEnabled="False" Click="generateButton_Click"/>
 
         <ProgressBar x:Name="progress" HorizontalAlignment="Center" Height="22" Margin="0,437,0,0" VerticalAlignment="Top" Width="738"/>

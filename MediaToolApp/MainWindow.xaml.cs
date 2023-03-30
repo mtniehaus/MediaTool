@@ -175,6 +175,7 @@ namespace MediaToolApp
             string edition = editionList.SelectedValue.ToString();
             string dest = folderPath.Text;
             bool noP = noPrompt.IsChecked.GetValueOrDefault(false);
+            bool recomp = recompress.IsChecked.GetValueOrDefault(false);
             // Disable everything
             generating = true;
             osList.IsEnabled = false;
@@ -183,8 +184,10 @@ namespace MediaToolApp
             editionList.IsEnabled = false;
             generateButton.IsEnabled = false;
             browseButton.IsEnabled = false;
+            noPrompt.IsEnabled = false;
+            recompress.IsEnabled = false;
             // Call the async routine to initialize
-            await Task.Run(async () => await this.Generate(os, arch, lang, edition, dest, noP));
+            await Task.Run(async () => await this.Generate(os, arch, lang, edition, dest, noP, recomp));
             // Re-enable everything
             generating = false;
             osList.IsEnabled = true;
@@ -193,13 +196,15 @@ namespace MediaToolApp
             editionList.IsEnabled = true;
             generateButton.IsEnabled = true;
             browseButton.IsEnabled = true;
+            noPrompt.IsEnabled = true;
+            recompress.IsEnabled = true;
             progress.Value = 0;
         }
 
-        private async Task Generate(string osVersion, string architecture, string language, string edition, string dest, bool noPrompt)
+        private async Task Generate(string osVersion, string architecture, string language, string edition, string dest, bool noPrompt, bool recompress)
         {
             // Invoke
-            Collection<PSObject> list = await wrapper.Generate(osVersion, architecture, language, edition, dest, noPrompt);
+            Collection<PSObject> list = await wrapper.Generate(osVersion, architecture, language, edition, dest, noPrompt, recompress);
         }
 
 

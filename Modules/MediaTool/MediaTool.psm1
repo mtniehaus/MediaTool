@@ -26,8 +26,11 @@ function Initialize-MediaTool {
         $null = MkDir "$tempDir\manifests"
         Expand.exe -R "$tempDir\products.cab" "$tempDir\manifests" | Out-Null
         # Load
-        [xml]$products = Get-Content "$tempDir\manifests\*.xml"
-        $script:files += $products.MCT.Catalogs.Catalog.PublishedMedia.Files.File
+        $products = New-Object xml
+        Get-ChildItem -Path "$tempDir\manifests\*.xml" | ForEach-Object {
+            $products.Load($_.FullName)
+            $script:files += $products.MCT.Catalogs.Catalog.PublishedMedia.Files.File
+        }
         # Clean up 
         Remove-Item -Path $tempDir -Recurse -Force
     }
@@ -84,7 +87,8 @@ function Get-MediaToolISO {
         [Parameter(Mandatory=$true)] [string] $Architecture,
         [Parameter(Mandatory=$true)] [string] $Language,
         [Parameter(Mandatory=$true)] [string] $Edition,
-        [Parameter] [switch] $NoPrompt,
+        [switch] $NoPrompt,
+        [switch] $Recompress,
         [Parameter(Mandatory=$false)] [string] $Destination = [Environment]::GetFolderPath("mydocuments")
     )
 
@@ -140,8 +144,12 @@ function Get-MediaToolISO {
     
     # Extract the appropriate OS image into the folder as install.wim
     Write-Verbose "Exporting Windows image (index $($imageInfo.ImageIndex))"
-    Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath "$working\sources\install.wim"
-    
+    if ($Recompress) {
+        Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath "$working\sources\install.wim" -CompressionType Maximum
+    } else {
+        Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath "$working\sources\install.wim"
+    }
+
     # Capture the ISO
     Write-Verbose "Capturing ISO"
     $esdInfo = Get-Item $esdDest
