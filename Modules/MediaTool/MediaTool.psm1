@@ -111,7 +111,7 @@ function Get-MediaToolISO {
     }
 
     # Download the file if it doesn't already exist
-    $esdDest = "$destination\$($currentFile.FileName)"
+    $esdDest = Join-Path -Path $Destination -ChildPath $currentFile.FileName
     if (-not (Test-Path $esdDest)) {
         Write-Verbose "Downloading ESD file to $esdDest"
         Start-BitsTransfer -Source $currentFile.FilePath -Destination $esdDest -Priority Foreground
@@ -153,7 +153,7 @@ function Get-MediaToolISO {
     # Capture the ISO
     Write-Verbose "Capturing ISO"
     $esdInfo = Get-Item $esdDest
-    $isoDest = "$destination\$($esdInfo.BaseName)_$($currentFile.Edition).iso"
+    $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName)_$($currentFile.Edition).iso"
     Push-Location "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg"
     if ($noPrompt) {
         & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys_noprompt.bin" "$working" "$isoDest" | Out-Null
