@@ -59,6 +59,7 @@ function Initialize-MediaTool {
 function Get-MediaToolList {
     [CmdletBinding()]
     param(
+        [switch] $All,
         [Parameter()] [string] $Product = "",
         [Parameter()] [string] $Architecture = "",
         [Parameter()] [string] $Language = "",
@@ -66,7 +67,10 @@ function Get-MediaToolList {
     )
 
     # Filter and return a summarized list of values based on the first blank value
-    if ($Product -eq "") {
+    if ($All) {
+        # Return everything
+        $script:files
+    } elseif ($Product -eq "") {
         $script:files | Select-Object -Property Version -Unique
     } elseif ($Architecture -eq "") {
         $script:files | Where-Object { $_.Version -eq $Product } | Select-Object -Property Architecture -Unique
@@ -113,12 +117,25 @@ function Get-MediaToolISO {
     # Download the file if it doesn't already exist
     $esdDest = Join-Path -Path $Destination -ChildPath $currentFile.FileName
     if (-not (Test-Path $esdDest)) {
+
+        # Let's make sure the file is accessible.  This may be required with the MS CDN.
+        try {
+            $resp = Invoke-WebRequest -Uri $currentFile.FilePath -Method HEAD -UseBasicParsing
+            if ($resp.StatusCode -ne 200) {
+                Write-Verbose "Unexpected HTTP response checking validity of URL $($currentFile.FilePath): $($resp.StatusCode) $($resp.StatusDescription)"
+            }
+        } catch {
+            Write-Verbose "Unexpected error checking validity of URL $($currentFile.FilePath): $_"
+        }
+
+        # Use BITS to to the actual download, since that reports progress
         Write-Verbose "Downloading ESD file to $esdDest"
         Start-BitsTransfer -Source $currentFile.FilePath -Destination $esdDest -Priority Foreground
         if (-not (Test-Path $esdDest)) {
             Write-Verbose "Download of the ESD failed."
             return
         }
+
     } else {
         Write-Verbose "ESD file $esdDest already exists, will use it."
     }
@@ -165,4 +182,19 @@ function Get-MediaToolISO {
 
     # Clean up the temporary folder
     Remove-Item $working -Recurse -Force
+}
+
+function Test-MediaToolFile {
+    # Make sure all the files are accessible
+    Get-MediaToolList -All | Select-Object -Property FilePath -Unique | ForEach-Object {
+        $current = $_
+        try {
+            $resp = Invoke-WebRequest -Uri $current.FilePath -Method HEAD -UseBasicParsing
+            if ($resp.StatusCode -ne 200) {
+                $current.FilePath,$resp
+            }
+        } catch {
+            $current.FilePath, $_
+        }
+    }
 }
