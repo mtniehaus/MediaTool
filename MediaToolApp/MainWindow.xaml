@@ -15,9 +15,11 @@
         <Label Content="Architecture" HorizontalAlignment="Left" Margin="30,150,0,0" VerticalAlignment="Top" Width="322"/>
         <ComboBox x:Name="archList" HorizontalAlignment="Left" Margin="30,176,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="archList_SelectionChanged" />
         <Label Content="Language" HorizontalAlignment="Left" Margin="30,210,0,0" VerticalAlignment="Top" Width="322"/>
-        <ComboBox x:Name="langList" HorizontalAlignment="Left" Margin="30,236,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="langList_SelectionChanged"/>
-        <Label Content="Edition (SKU)" HorizontalAlignment="Left" Margin="30,270,0,0" VerticalAlignment="Top" Width="322"/>
-        <ComboBox x:Name="editionList" HorizontalAlignment="Left" Margin="30,296,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False"/>
+        <ComboBox x:Name="langList" HorizontalAlignment="Left" Margin="30,236,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="langList_SelectionChanged" />
+        <Label Content="Media" HorizontalAlignment="Left" Margin="30,270,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="mediaList" HorizontalAlignment="Left" Margin="30,296,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" SelectionChanged="mediaList_SelectionChanged" />
+        <Label Content="Edition (SKU)" HorizontalAlignment="Left" Margin="30,333,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="editionList" HorizontalAlignment="Left" Margin="30,359,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False"/>
 
         <Label Content="Settings" HorizontalAlignment="Left" Margin="400,42,0,0" VerticalAlignment="Top" FontFamily="Segoe UI Semibold" FontSize="16" Foreground="Blue"/>
         <Border Margin="400,71,78,711" Background="Blue"/>
@@ -27,12 +29,12 @@
         <CheckBox x:Name="noPrompt" Content="Do not require pressing a key to boot from ISO" HorizontalAlignment="Left" Margin="400,180,0,0" VerticalAlignment="Top" />
         <CheckBox x:Name="recompress" Content="Re-compress the OS image using standard compression" HorizontalAlignment="Left" Margin="400,200,0,0" VerticalAlignment="Top" />
 
-        <Button x:Name="generateButton" Content="Generate" HorizontalAlignment="Left" Margin="328,352,0,0" VerticalAlignment="Top" FontSize="20" Background="Blue" Foreground="White" Width="100" Height="40" IsEnabled="False" Click="generateButton_Click"/>
+        <Button x:Name="generateButton" Content="Generate" HorizontalAlignment="Left" Margin="328,398,0,0" VerticalAlignment="Top" FontSize="20" Background="Blue" Foreground="White" Width="100" Height="40" IsEnabled="False" Click="generateButton_Click"/>
 
-        <ProgressBar x:Name="progress" HorizontalAlignment="Center" Height="22" Margin="0,437,0,0" VerticalAlignment="Top" Width="738"/>
-        <ScrollViewer x:Name="scrollBox" HorizontalScrollBarVisibility="Auto" Margin="0,485,0,0">
-            <TextBlock Name="outputBox" Margin="30,0,0,0"/>
+        <ProgressBar x:Name="progress" HorizontalAlignment="Center" Height="22" Margin="0,456,0,0" VerticalAlignment="Top" Width="738"/>
+        <ScrollViewer x:Name="scrollBox" Margin="0,497,0,0">
+            <RichTextBox Name="outputBox" Margin="0,0,0,0" Height="Auto" Width="Auto" IsReadOnly="True" BorderThickness="0" />
         </ScrollViewer>
-        
+
     </Grid>
 </Window>

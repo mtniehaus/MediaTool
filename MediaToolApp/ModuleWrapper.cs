@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 
@@ -53,6 +49,7 @@ namespace MediaToolApp
             {
                 // First initialize
                 PSCommand initialize = new PSCommand();
+                Trace.WriteLine("Downloading manifests.");
                 initialize.AddCommand("Initialize-MediaTool");
 
                 return RunCommandAsync(initialize).Result;
@@ -64,7 +61,7 @@ namespace MediaToolApp
             return null;
         }
 
-        public async Task<Collection<PSObject>> GetList(string product, string architecture, string language)
+        public async Task<Collection<PSObject>> GetList(string product, string architecture, string language, string media)
         {
             try
             {
@@ -82,6 +79,10 @@ namespace MediaToolApp
                 {
                     list.AddParameter("Language", language);
                 }
+                if (media != null)
+                {
+                    list.AddParameter("Media", media);
+                }
 
                 Task<Collection<PSObject>> t = RunCommandAsync(list);
                 return t.Result;
@@ -93,7 +94,7 @@ namespace MediaToolApp
             return null;
         }
 
-        public async Task<Collection<PSObject>> Generate(string product, string architecture, string language, string edition, string dest, bool noPrompt, bool recompress)
+        public async Task<Collection<PSObject>> Generate(string product, string architecture, string language, string media, string edition, string dest, bool noPrompt, bool recompress)
         {
             try
             {
@@ -102,7 +103,7 @@ namespace MediaToolApp
                     .AddParameter("Product", product)
                     .AddParameter("Architecture", architecture)
                     .AddParameter("Language", language)
-                    .AddParameter("Edition", edition)
+                    .AddParameter("Media", media)
                     .AddParameter("Destination", dest);
                 if (noPrompt)
                 {
@@ -111,6 +112,10 @@ namespace MediaToolApp
                 if (recompress)
                 {
                     list.AddParameter("Recompress");
+                }
+                if (!String.IsNullOrEmpty(edition))
+                {
+                    list.AddParameter("Edition", edition);
                 }
                 list.AddParameter("Verbose");
 

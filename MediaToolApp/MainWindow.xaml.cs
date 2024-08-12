@@ -1,24 +1,12 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Forms;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
 
 namespace MediaToolApp
 {
@@ -55,7 +43,7 @@ namespace MediaToolApp
             await wrapper.Initialize();
 
             // Get the product list
-            Collection<PSObject> list = await wrapper.GetList(null, null, null);
+            Collection<PSObject> list = await wrapper.GetList(null, null, null, null);
 
             // Populate the list
             osList.Dispatcher.Invoke(() =>
@@ -95,7 +83,7 @@ namespace MediaToolApp
         private async Task InitArch(string osVersion)
         {
             // Get the architecture list
-            Collection<PSObject> list = await wrapper.GetList(osVersion, null, null);
+            Collection<PSObject> list = await wrapper.GetList(osVersion, null, null, null);
 
             // Populate the list
             archList.Dispatcher.Invoke(() =>
@@ -123,7 +111,7 @@ namespace MediaToolApp
         private async Task InitLang(string osVersion, string architecture)
         {
             // Get the language list
-            Collection<PSObject> list = await wrapper.GetList(osVersion, architecture, null);
+            Collection<PSObject> list = await wrapper.GetList(osVersion, architecture, null, null);
 
             // Populate the list
             langList.Dispatcher.Invoke(() =>
@@ -146,18 +134,49 @@ namespace MediaToolApp
             string arch = archList.SelectedValue.ToString();
             string lang = langList.SelectedValue.ToString();
             // Call the async routine to initialize
-            await Task.Run(async () => await this.InitEdition(os, arch, lang));
+            await Task.Run(async () => await this.InitMedia(os, arch, lang));
         }
 
-        private async Task InitEdition(string osVersion, string architecture, string language)
+        private async Task InitMedia(string osVersion, string architecture, string language)
         {
             // Get the language list
-            Collection<PSObject> list = await wrapper.GetList(osVersion, architecture, language);
+            Collection<PSObject> list = await wrapper.GetList(osVersion, architecture, language, null);
+
+            // Populate the list
+            mediaList.Dispatcher.Invoke(() =>
+            {
+                mediaList.Items.Clear();
+                foreach (PSObject l in list.OrderBy(p => p.Properties["Media"].Value))
+                {
+                    this.mediaList.Items.Add(l.Properties["Media"].Value);
+                }
+                mediaList.SelectedIndex = 0;
+                mediaList.IsEnabled = true;
+            });
+        }
+
+        private async void mediaList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (mediaList.SelectedItem == null) return;
+
+            string os = osList.SelectedValue.ToString();
+            string arch = archList.SelectedValue.ToString();
+            string lang = langList.SelectedValue.ToString();
+            string media = mediaList.SelectedItem.ToString();
+            // Call the async routine to initialize
+            await Task.Run(async () => await this.InitEdition(os, arch, lang, media));
+        }
+
+        private async Task InitEdition(string osVersion, string architecture, string language, string media)
+        {
+            // Get the language list
+            Collection<PSObject> list = await wrapper.GetList(osVersion, architecture, language, media);
 
             // Populate the list
             editionList.Dispatcher.Invoke(() =>
             {
                 editionList.Items.Clear();
+                this.editionList.Items.Add("(All)");
                 foreach (PSObject l in list.OrderBy(p => p.Properties["Edition"].Value))
                 {
                     this.editionList.Items.Add(l.Properties["Edition"].Value);
@@ -173,7 +192,12 @@ namespace MediaToolApp
             string os = osList.SelectedValue.ToString();
             string arch = archList.SelectedValue.ToString();
             string lang = langList.SelectedValue.ToString();
+            string media = mediaList.SelectedValue.ToString();
             string edition = editionList.SelectedValue.ToString();
+            if (edition == "(All)")
+            {
+                edition = "";
+            }
             string dest = folderPath.Text;
             bool noP = noPrompt.IsChecked.GetValueOrDefault(false);
             bool recomp = recompress.IsChecked.GetValueOrDefault(false);
@@ -182,18 +206,20 @@ namespace MediaToolApp
             osList.IsEnabled = false;
             archList.IsEnabled = false;
             langList.IsEnabled = false;
+            mediaList.IsEnabled = false;
             editionList.IsEnabled = false;
             generateButton.IsEnabled = false;
             browseButton.IsEnabled = false;
             noPrompt.IsEnabled = false;
             recompress.IsEnabled = false;
             // Call the async routine to initialize
-            await Task.Run(async () => await this.Generate(os, arch, lang, edition, dest, noP, recomp));
+            await Task.Run(async () => await this.Generate(os, arch, lang, media, edition, dest, noP, recomp));
             // Re-enable everything
             generating = false;
             osList.IsEnabled = true;
             archList.IsEnabled = true;
             langList.IsEnabled = true;
+            mediaList.IsEnabled = true;
             editionList.IsEnabled = true;
             generateButton.IsEnabled = true;
             browseButton.IsEnabled = true;
@@ -202,10 +228,10 @@ namespace MediaToolApp
             progress.Value = 0;
         }
 
-        private async Task Generate(string osVersion, string architecture, string language, string edition, string dest, bool noPrompt, bool recompress)
+        private async Task Generate(string osVersion, string architecture, string language, string media, string edition, string dest, bool noPrompt, bool recompress)
         {
             // Invoke
-            Collection<PSObject> list = await wrapper.Generate(osVersion, architecture, language, edition, dest, noPrompt, recompress);
+            Collection<PSObject> list = await wrapper.Generate(osVersion, architecture, language, media, edition, dest, noPrompt, recompress);
         }
 
 
@@ -221,10 +247,10 @@ namespace MediaToolApp
 
     public class MyTraceListener : TraceListener
     {
-        private TextBlock output;
+        private System.Windows.Controls.RichTextBox output;
         private ScrollViewer viewer;
 
-        public MyTraceListener(TextBlock output, ScrollViewer scroll)
+        public MyTraceListener(System.Windows.Controls.RichTextBox output, ScrollViewer scroll)
         {
             this.Name = "Trace";
             this.output = output;
@@ -235,14 +261,14 @@ namespace MediaToolApp
         {
             output.Dispatcher.Invoke(() =>
             {
-                output.Text += message;
+                output.AppendText(message);
                 viewer.ScrollToEnd();
             });
         }
 
         public override void WriteLine(string message)
         {
-            Write(message + Environment.NewLine);
+            Write(message.Trim() + "\r");
         }
     }
 }

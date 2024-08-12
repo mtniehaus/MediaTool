@@ -325,7 +325,7 @@ namespace MediaToolApp
         /// </summary>
         public override string Name
         {
-            get { return "TaniumACP.PowerShellHost"; }
+            get { return "MediaToolApp.PowerShellHost"; }
         }
 
         /// <summary>
