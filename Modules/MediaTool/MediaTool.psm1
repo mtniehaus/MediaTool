@@ -32,7 +32,7 @@ function Initialize-MediaTool {
             $script:files += $products.MCT.Catalogs.Catalog.PublishedMedia.Files.File
         }
         # Clean up 
-        #Remove-Item -Path $tempDir -Recurse -Force
+        Remove-Item -Path $tempDir -Recurse -Force
     }
 
     # Add a version and media type to each
