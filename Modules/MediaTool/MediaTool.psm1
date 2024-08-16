@@ -128,7 +128,13 @@ function Get-MediaToolISO {
         Write-Host "The Assessment and Deployment Kit (ADK) is not installed.  This is required to create an ISO."
         return
     }
-        
+
+    # Make sure OSCDImg.exe is present
+    if (-not (Test-Path "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe")) {
+        Write-Host "Unable to find OSCDIMG.EXE which is needed to create an ISO."
+        Write-Host "Expected path: $($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe"
+    }
+
     # Get the specific file object
     if ($edition -eq "") {
         $currentFile = $script:files | Where-Object { $_.Version -eq $Product -and $_.Architecture -eq $Architecture -and $_.Language -eq $Language -and $_.Media -eq $Media } | Select-Object -First 1
