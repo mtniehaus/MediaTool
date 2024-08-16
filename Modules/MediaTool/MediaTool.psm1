@@ -154,6 +154,15 @@ function Get-MediaToolISO {
     $esdDest = Join-Path -Path $Destination -ChildPath $currentFile.FileName
     if (-not (Test-Path $esdDest)) {
 
+        # Check to see if we have enough disk space on the destination drive
+        $vol = Get-Volume -FilePath $Destination
+        if ($null -ne $vol) {
+            if ([Int64]$currentFile.Size -gt $vol.SizeRemaining) {
+                Write-Host "Insufficient space to download ESD file"
+                return
+            }
+        }
+
         # Let's make sure the file is accessible.  This may be required with the MS CDN.
         try {
             # Read the header (208 bytes)
@@ -179,7 +188,7 @@ function Get-MediaToolISO {
         Write-Verbose "Downloading ESD file to $esdDest"
         Start-BitsTransfer -Source $currentFile.FilePath -Destination $esdDest -Priority Foreground -DisplayName "Oofhours Media Tool"
         if (-not (Test-Path $esdDest)) {
-            Write-Verbose "Download of the ESD failed."
+            Write-Host "Download of the ESD failed."
             return
         }
 
@@ -191,7 +200,7 @@ function Get-MediaToolISO {
     if ($Edition -ne "") {
         $imageInfo = Get-WimFileImagesInfo -WimFilePath $esdDest | Where-Object { $_.ImageEditionId -ieq $currentFile.Edition }
         if ($null -eq $imageInfo) {
-            Write-Verbose "The downloaded ESD file does not contain an image for edition $($currentFile.Edition), unable to create ISO."
+            Write-Host "The downloaded ESD file does not contain an image for edition $($currentFile.Edition), unable to create ISO."
             Get-WimFileImagesInfo -WimFilePath $esdDest | Select ImageEditionID | Out-Host
             return
         }
@@ -203,16 +212,16 @@ function Get-MediaToolISO {
     $working = New-TemporaryDirectory
     
     # Apply the first image into that folder
-    Write-Verbose "Applying image index 1 to working folder"
+    Write-Host "Applying image index 1 to working folder"
     Expand-WindowsImage -ImagePath $esdDest -Index 1 -ApplyPath $working
     
     # Extract the third image (Windows PE + Setup) as boot.wim into the folder
-    Write-Verbose "Applying image index 3 (PE + setup) to working folder"
+    Write-Host "Applying image index 3 (PE + setup) to working folder"
     Export-WindowsImage -SourceImagePath $esdDest -SourceIndex 3 -DestinationImagePath "$working\sources\boot.wim"  -DestinationName "Microsoft Windows Setup" -Setbootable -CompressionType Maximum
     
     # Extract the appropriate OS image into the folder as install.wim
     if ($Edition -ne "") {
-        Write-Verbose "Exporting Windows $($imageInfo.ImageEditionId) image (index $($imageInfo.ImageIndex))"
+        Write-Host "Exporting Windows $($imageInfo.ImageEditionId) image (index $($imageInfo.ImageIndex))"
         if ($Recompress) {
             Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath "$working\sources\install.wim" -CompressionType Maximum
         } else {
@@ -221,7 +230,7 @@ function Get-MediaToolISO {
     } else {
         # Export all the images
         $imageInfo | ForEach-Object {
-            Write-Verbose "Exporting Windows $($imageInfo.ImageEditionId) image (index $($_.ImageIndex))"
+            Write-Host "Exporting Windows $($imageInfo.ImageEditionId) image (index $($_.ImageIndex))"
             if ($Recompress) {
                 Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $_.ImageIndex -DestinationImagePath "$working\sources\install.wim" -CompressionType Maximum
             } else {
@@ -231,7 +240,7 @@ function Get-MediaToolISO {
     }
 
     # Capture the ISO
-    Write-Verbose "Capturing ISO"
+    Write-Host "Capturing ISO"
     $esdInfo = Get-Item $esdDest
     if ($Edition -eq "") {
         $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName).iso"
