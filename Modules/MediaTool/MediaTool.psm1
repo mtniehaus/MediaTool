@@ -244,8 +244,12 @@ function Get-MediaToolISO {
     } else {
         & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys.bin" "$working" "$isoDest" | Out-Null
     }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Unexpected return code from OSCDIMG.EXE, rc = $LASTEXITCODE"
+    } else {
+        Write-Host "$isoDest created."
+    }
     Pop-Location
-    Write-Verbose "$isoDest created."
 
     # Clean up the temporary folder
     Remove-Item $working -Recurse -Force
