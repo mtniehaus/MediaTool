@@ -17,7 +17,7 @@ function Initialize-MediaTool {
     # Get the latest files
     $script:files = @()
     $sources = @("https://go.microsoft.com/fwlink/?LinkId=2156292","https://go.microsoft.com/fwlink/?LinkId=841361")
-    $sources | % {
+    $sources | ForEach-Object {
         $tempDir = New-TemporaryDirectory
         # Download
         Write-Verbose "Downloading from $_"
@@ -36,7 +36,7 @@ function Initialize-MediaTool {
     }
 
     # Add a version and media type to each
-    $script:files | % {
+    $script:files | ForEach-Object {
         $build = $_.FileName.Substring(0,5)
         switch ($build)
         {
@@ -97,7 +97,7 @@ function Get-MediaToolList {
     } elseif ($Media -eq "") {
         $script:files | Where-Object { $_.Version -eq $Product -and $_.Architecture -eq $Architecture -and $_.Language -eq $Language } | Select-Object -Property Media -Unique
     } elseif ($Edition -ne "") {
-        # Return file details for the specified editiion
+        # Return file details for the specified edition
         $script:files | Where-Object { $_.Version -eq $Product -and $_.Architecture -eq $Architecture -and $_.Language -eq $Language -and $_.Edition -eq $Edition }
     } else {
         # Return file details for all editions
@@ -105,7 +105,16 @@ function Get-MediaToolList {
     }
 }
 
-function Get-MediaToolISO {
+function Get-MediaToolUSB {
+    [CmdletBinding()]
+    param(
+    )
+
+    # Return a list of removable media
+    Get-Volume | Where-Object { $_.DriveType -eq "Removable" }
+}
+
+function New-MediaToolMedia {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)] [string] $Product,
@@ -115,7 +124,9 @@ function Get-MediaToolISO {
         [Parameter(Mandatory=$false)] [string] $Edition = "",
         [switch] $NoPrompt,
         [switch] $Recompress,
-        [Parameter(Mandatory=$false)] [string] $Destination = [Environment]::GetFolderPath("mydocuments")
+        [Parameter(Mandatory=$false)] [string] $Destination = [Environment]::GetFolderPath("mydocuments"),
+        [Parameter(Mandatory=$false)] [string] $DownloadLocation = [Environment]::GetFolderPath("mydocuments"),
+        [Parameter(Mandatory=$false)] [string] $Label = "Oofhours"
     )
 
     # Find the ADK
@@ -149,13 +160,37 @@ function Get-MediaToolISO {
             return
         }
     }
-
+    
+    # Destination could be USB or ISO.  Figure out which.
+    $drive = Get-Volume -DriveLetter $Destination.Substring(0, 1)
+    $createISO = $false
+    $createUSB = $false
+    if (-not ($Destination.EndsWith(":"))) {
+        $createISO = $true
+    } else {
+        # For USB, make sure it's a drive letter
+        if ($Destination.Length -ne 2) {
+            throw "You must specify a removable drive letter with a colon, e.g. 'D:'"
+        }
+        # For USB, make sure the volume is removable
+        if ($drive.DriveType -ne 'Removable') {
+            throw "You must specify a removable drive"
+        }
+        if ($drive.Size -eq 0) {
+            Write-Warning "Removable drive size cannot be determined."
+        } else {
+            $sizeGB = [math]::Round($drive.Size / 1024 / 1024 / 1024, 1)
+            Write-Host "Removable volume size: $sizeGB GB"
+        }
+        $createUSB = $true
+    }
+    
     # Download the file if it doesn't already exist
-    $esdDest = Join-Path -Path $Destination -ChildPath $currentFile.FileName
+    $esdDest = Join-Path -Path $DownloadLocation -ChildPath $currentFile.FileName
     if (-not (Test-Path $esdDest)) {
 
         # Check to see if we have enough disk space on the destination drive
-        $vol = Get-Volume -FilePath $Destination
+        $vol = Get-Volume -FilePath $DownloadLocation
         if ($null -ne $vol) {
             if ([Int64]$currentFile.Size -gt $vol.SizeRemaining) {
                 Write-Host "Insufficient space to download ESD file"
@@ -201,16 +236,48 @@ function Get-MediaToolISO {
         $imageInfo = Get-WimFileImagesInfo -WimFilePath $esdDest | Where-Object { $_.ImageEditionId -ieq $currentFile.Edition }
         if ($null -eq $imageInfo) {
             Write-Host "The downloaded ESD file does not contain an image for edition $($currentFile.Edition), unable to create ISO."
-            Get-WimFileImagesInfo -WimFilePath $esdDest | Select ImageEditionID | Out-Host
+            Get-WimFileImagesInfo -WimFilePath $esdDest | Select-Object ImageEditionID | Out-Host
             return
         }
     } else {
         $imageInfo = Get-WimFileImagesInfo -WimFilePath $esdDest | Where-Object { $_.ImageIndex -gt 3 }
     }
 
-    # Create a folder for the extracted content
-    $working = New-TemporaryDirectory
-    
+    # For media, we'll put the content directly on the media.  For ISO, we need a temporary folder.
+    if ($createISO)
+    {
+        # Create a folder for the extracted content
+        $working = New-TemporaryDirectory
+    } else {
+        # Format the media to get rid of anything already there. Use the same drive letter and volume size
+        Write-Host "Formatting volume $Destination as FAT32"
+        $bootVolume = Format-Volume -DriveLetter $Destination.Substring(0, 1) -FileSystem FAT32 -NewFileSystemLabel $Label -ErrorAction SilentlyContinue
+        if ($null -eq $bootVolume) {
+            Write-Host "Format failed, assuming drive is greater than 32GB, partitioning and formatting to 32GB"
+            # Partition it
+            $disk = $drive | Get-Partition | Get-Disk | Select-Object -Unique
+            if ($null -eq $disk) {
+                throw "Unable to locate disk for drive $Destination"
+            }
+            Clear-Disk -Number $disk.Number -RemoveData -RemoveOEM -Confirm:$false
+            Initialize-Disk -Number $disk.Number -PartitionStyle MBR -ErrorAction SilentlyContinue
+            $bootPart = New-Partition -DiskNumber $disk.Number -AssignDriveLetter -Size 32GB
+            $bootVolume = Format-Volume -DriveLetter $bootPart.DriveLetter -FileSystem FAT32 -NewFileSystemLabel $Label -Force
+            if ($null -eq $bootVolume) {
+                throw "Unable to format a 32GB partition on drive"
+            }
+        }
+        # Use the media
+        $working = $Destination
+    }
+
+    # For USB, put the temporary install.wim outside of the working folder
+    if ($createUSB) {
+        $wimPath = "$($env:TEMP)\install.wim"
+    } else {
+        $wimPath =  "$working\sources\install.wim"
+    }
+
     # Apply the first image into that folder
     Write-Host "Applying image index 1 to working folder"
     Expand-WindowsImage -ImagePath $esdDest -Index 1 -ApplyPath $working
@@ -223,45 +290,52 @@ function Get-MediaToolISO {
     if ($Edition -ne "") {
         Write-Host "Exporting Windows $($imageInfo.ImageEditionId) image (index $($imageInfo.ImageIndex))"
         if ($Recompress) {
-            Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath "$working\sources\install.wim" -CompressionType Maximum
+            Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath $wimPath -CompressionType Maximum
         } else {
-            Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath "$working\sources\install.wim"
+            Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $imageInfo.ImageIndex -DestinationImagePath $wimPath
         }
     } else {
         # Export all the images
         $imageInfo | ForEach-Object {
             Write-Host "Exporting Windows $($imageInfo.ImageEditionId) image (index $($_.ImageIndex))"
             if ($Recompress) {
-                Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $_.ImageIndex -DestinationImagePath "$working\sources\install.wim" -CompressionType Maximum
+                Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $_.ImageIndex -DestinationImagePath $wimPath -CompressionType Maximum
             } else {
-                Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $_.ImageIndex -DestinationImagePath "$working\sources\install.wim"
+                Export-WindowsImage -SourceImagePath $esdDest -SourceIndex $_.ImageIndex -DestinationImagePath $wimPath
             }
         }
     }
 
-    # Capture the ISO
-    Write-Host "Capturing ISO"
-    $esdInfo = Get-Item $esdDest
-    if ($Edition -eq "") {
-        $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName).iso"
+    # For media, split the install.wim.  Otherwise, capture an ISO.
+    if ($createUSB) {
+        Split-WindowsImage -ImagePath $wimPath -FileSize 4000 -SplitImagePath  "$working\sources\install.swm"
+        Remove-Item $wimPath
+        Write-Host "Media created successfully on $Destination drive."
     } else {
-        $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName)_$($currentFile.Edition).iso"
-    }
-    Push-Location "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg"
-    if ($noPrompt) {
-        & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys_noprompt.bin" "$working" "$isoDest" | Out-Null
-    } else {
-        & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys.bin" "$working" "$isoDest" | Out-Null
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Unexpected return code from OSCDIMG.EXE, rc = $LASTEXITCODE"
-    } else {
-        Write-Host "$isoDest created."
-    }
-    Pop-Location
+        # Capture the ISO
+        Write-Host "Capturing ISO"
+        $esdInfo = Get-Item $esdDest
+        if ($Edition -eq "") {
+            $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName).iso"
+        } else {
+            $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName)_$($currentFile.Edition).iso"
+        }
+        Push-Location "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg"
+        if ($noPrompt) {
+            & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys_noprompt.bin" "$working" "$isoDest" | Out-Null
+        } else {
+            & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys.bin" "$working" "$isoDest" | Out-Null
+        }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Unexpected return code from OSCDIMG.EXE, rc = $LASTEXITCODE"
+        } else {
+            Write-Host "$isoDest created."
+        }
+        Pop-Location
 
-    # Clean up the temporary folder
-    Remove-Item $working -Recurse -Force
+        # Clean up the temporary folder
+        Remove-Item $working -Recurse -Force
+    }
 }
 
 function Test-MediaToolFile {

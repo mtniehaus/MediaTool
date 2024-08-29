@@ -23,11 +23,18 @@
 
         <Label Content="Settings" HorizontalAlignment="Left" Margin="400,42,0,0" VerticalAlignment="Top" FontFamily="Segoe UI Semibold" FontSize="16" Foreground="Blue"/>
         <Border Margin="400,71,78,711" Background="Blue"/>
-        <Label Content="Destination Folder" HorizontalAlignment="Left" Margin="400,90,0,0" VerticalAlignment="Top" Width="322"/>
-        <TextBox x:Name="folderPath" HorizontalAlignment="Left" Margin="400,118,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="322" Height="20" IsEnabled="False" Background="#FFECECEC"/>
-        <Button x:Name="browseButton" Content="Browse..." HorizontalAlignment="Left" Margin="672,143,0,0" VerticalAlignment="Top" Click="browseButton_Click"/>
-        <CheckBox x:Name="noPrompt" Content="Do not require pressing a key to boot from ISO" HorizontalAlignment="Left" Margin="400,180,0,0" VerticalAlignment="Top" />
-        <CheckBox x:Name="recompress" Content="Re-compress the OS image using standard compression" HorizontalAlignment="Left" Margin="400,200,0,0" VerticalAlignment="Top" />
+
+        <RadioButton x:Name="createISO" GroupName="MediaChoice" Content="Create a bootable ISO" HorizontalAlignment="Left" Margin="400,90,0,0" VerticalAlignment="Top" IsEnabled="False" IsChecked="True" />
+        <Label Content="Destination Folder:" HorizontalAlignment="Left" Margin="430,110,0,0" VerticalAlignment="Top" Width="322"/>
+        <TextBox x:Name="folderPath" HorizontalAlignment="Left" Margin="430,135,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="322" Height="20" IsEnabled="False" Background="#FFECECEC"/>
+        <Button x:Name="browseButton" Content="Browse..." HorizontalAlignment="Left" Margin="702,160,0,0" VerticalAlignment="Top" Click="browseButton_Click"/>
+        <CheckBox x:Name="noPrompt" Content="Do not require pressing a key to boot from ISO" HorizontalAlignment="Left" Margin="430,185,0,0" VerticalAlignment="Top" IsEnabled="False" />
+
+        <RadioButton x:Name="createUSB" GroupName="MediaChoice" Content="Create Media" HorizontalAlignment="Left" Margin="400,220,0,0" VerticalAlignment="Top" IsEnabled="False" />
+        <Label Content="Destination Drive:" HorizontalAlignment="Left" Margin="430,240,0,0" VerticalAlignment="Top" Width="322"/>
+        <ComboBox x:Name="destDrive" HorizontalAlignment="Left" Margin="430,265,0,0" VerticalAlignment="Top" Width="322" IsEnabled="False" />
+
+        <CheckBox x:Name="recompress" Content="Re-compress the OS image using standard compression" HorizontalAlignment="Left" Margin="400,315,0,0" VerticalAlignment="Top" />
 
         <Button x:Name="generateButton" Content="Generate" HorizontalAlignment="Left" Margin="328,398,0,0" VerticalAlignment="Top" FontSize="20" Background="Blue" Foreground="White" Width="100" Height="40" IsEnabled="False" Click="generateButton_Click"/>
 

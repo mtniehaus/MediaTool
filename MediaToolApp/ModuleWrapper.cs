@@ -94,12 +94,29 @@ namespace MediaToolApp
             return null;
         }
 
+        public async Task<Collection<PSObject>> GetUSBList()
+        {
+            try
+            {
+                PSCommand list = new PSCommand();
+                list.AddCommand("Get-MediaToolUSB");
+
+                Task<Collection<PSObject>> t = RunCommandAsync(list);
+                return t.Result;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Unhandled exception: " + ex.ToString());
+            }
+            return null;
+        }
+
         public async Task<Collection<PSObject>> Generate(string product, string architecture, string language, string media, string edition, string dest, bool noPrompt, bool recompress)
         {
             try
             {
                 PSCommand list = new PSCommand();
-                list.AddCommand("Get-MediaToolISO")
+                list.AddCommand("New-MediaToolMedia")
                     .AddParameter("Product", product)
                     .AddParameter("Architecture", architecture)
                     .AddParameter("Language", language)

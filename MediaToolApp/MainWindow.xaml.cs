@@ -42,21 +42,46 @@ namespace MediaToolApp
             wrapper = new ModuleWrapper(this.progress);
             await wrapper.Initialize();
 
+            // Get the USB media list
+            Collection<PSObject> usbDrives = await wrapper.GetUSBList();
+
+            // Populate the USB media list
+            destDrive.Dispatcher.Invoke(() =>
+            {
+                destDrive.Items.Clear();
+                foreach (PSObject l in usbDrives.OrderBy(p => p.Properties["DriveLetter"].Value))
+                {
+                    destDrive.Items.Add(l.Properties["DriveLetter"].Value + ":");
+                }
+                destDrive.SelectedIndex = 0;
+                destDrive.IsEnabled = true;
+
+                // While we're here, populate the default ISO path
+                folderPath.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            });
+
             // Get the product list
             Collection<PSObject> list = await wrapper.GetList(null, null, null, null);
 
-            // Populate the list
+            // Populate the media list
             osList.Dispatcher.Invoke(() =>
             {
                 osList.Items.Clear();
                 foreach (PSObject l in list.OrderBy(p => p.Properties["Version"].Value))
                 {
-                    this.osList.Items.Add(l.Properties["Version"].Value);
+                    osList.Items.Add(l.Properties["Version"].Value);
                 }
                 osList.SelectedIndex = 0;
                 osList.IsEnabled = true;
 
-                folderPath.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            });
+
+            // Enable the needed UI elements, select ISO by default
+            createISO.Dispatcher.Invoke(() =>
+            {
+                createISO.IsEnabled = true;
+                createUSB.IsEnabled = true;
+                noPrompt.IsEnabled = true;
             });
         }
 
@@ -91,7 +116,7 @@ namespace MediaToolApp
                 archList.Items.Clear();
                 foreach (PSObject l in list.OrderBy(p => p.Properties["Architecture"].Value))
                 {
-                    this.archList.Items.Add(l.Properties["Architecture"].Value);
+                    archList.Items.Add(l.Properties["Architecture"].Value);
                 }
                 archList.SelectedIndex = 0;
                 archList.IsEnabled = true;
@@ -119,7 +144,7 @@ namespace MediaToolApp
                 langList.Items.Clear();
                 foreach (PSObject l in list.OrderBy(p => p.Properties["Language"].Value))
                 {
-                    this.langList.Items.Add(l.Properties["Language"].Value);
+                    langList.Items.Add(l.Properties["Language"].Value);
                 }
                 langList.SelectedIndex = 0;
                 langList.IsEnabled = true;
@@ -148,7 +173,7 @@ namespace MediaToolApp
                 mediaList.Items.Clear();
                 foreach (PSObject l in list.OrderBy(p => p.Properties["Media"].Value))
                 {
-                    this.mediaList.Items.Add(l.Properties["Media"].Value);
+                    mediaList.Items.Add(l.Properties["Media"].Value);
                 }
                 mediaList.SelectedIndex = 0;
                 mediaList.IsEnabled = true;
@@ -176,10 +201,10 @@ namespace MediaToolApp
             editionList.Dispatcher.Invoke(() =>
             {
                 editionList.Items.Clear();
-                this.editionList.Items.Add("(All)");
+                editionList.Items.Add("(All)");
                 foreach (PSObject l in list.OrderBy(p => p.Properties["Edition"].Value))
                 {
-                    this.editionList.Items.Add(l.Properties["Edition"].Value);
+                    editionList.Items.Add(l.Properties["Edition"].Value);
                 }
                 editionList.SelectedIndex = 0;
                 editionList.IsEnabled = true;
@@ -199,6 +224,7 @@ namespace MediaToolApp
                 edition = "";
             }
             string dest = folderPath.Text;
+            string drive = (string) destDrive.SelectedValue;
             bool noP = noPrompt.IsChecked.GetValueOrDefault(false);
             bool recomp = recompress.IsChecked.GetValueOrDefault(false);
             // Disable everything
@@ -212,8 +238,17 @@ namespace MediaToolApp
             browseButton.IsEnabled = false;
             noPrompt.IsEnabled = false;
             recompress.IsEnabled = false;
-            // Call the async routine to initialize
-            await Task.Run(async () => await this.Generate(os, arch, lang, media, edition, dest, noP, recomp));
+            createISO.IsEnabled = false;
+            createUSB.IsEnabled = false;
+            mediaList.IsEnabled = false;
+            // Call the async routine to create media
+            if ((bool)createISO.IsChecked)
+            {
+                await Task.Run(async () => await this.Generate(os, arch, lang, media, edition, dest, noP, recomp));
+            } else
+            {
+                await Task.Run(async () => await this.Generate(os, arch, lang, media, edition, drive, noP, recomp));
+            }
             // Re-enable everything
             generating = false;
             osList.IsEnabled = true;
@@ -225,6 +260,9 @@ namespace MediaToolApp
             browseButton.IsEnabled = true;
             noPrompt.IsEnabled = true;
             recompress.IsEnabled = true;
+            createISO.IsEnabled = true;
+            createUSB.IsEnabled = true;
+            mediaList.IsEnabled = true;
             progress.Value = 0;
         }
 
@@ -252,9 +290,9 @@ namespace MediaToolApp
 
         public MyTraceListener(System.Windows.Controls.RichTextBox output, ScrollViewer scroll)
         {
-            this.Name = "Trace";
+            Name = "Trace";
             this.output = output;
-            this.viewer = scroll;
+            viewer = scroll;
         }
 
         public override void Write(string message)
