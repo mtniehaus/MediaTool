@@ -320,7 +320,14 @@ function New-MediaToolMedia {
         } else {
             $isoDest = Join-Path -Path $Destination -ChildPath "$($esdInfo.BaseName)_$($currentFile.Edition).iso"
         }
-        Push-Location "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg"
+
+        # Make sure we use the right architecture for the boot files (efisys*.bin)
+        $bootArch = $Architecture
+        if ($bootArch -ieq "x64") {
+            $bootArch = "amd64"
+        }
+        Push-Location "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\$bootArch\Oscdimg"
+
         if ($noPrompt) {
             & "$($kitsRoot)Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe" "-lWindowsSetup"'-o' '-u2' '-m' '-udfver102' "-bootdata:1#pEF,e,befisys_noprompt.bin" "$working" "$isoDest" | Out-Null
         } else {
